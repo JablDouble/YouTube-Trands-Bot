@@ -1,10 +1,13 @@
 package com.jabl.Bot;
 
+import com.jabl.grabber.Channel;
 import com.jabl.grabber.Trends;
 import org.telegram.telegrambots.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
@@ -24,9 +27,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
             if (message.getText().toUpperCase().equals("ТРЕНДЫ") || message.getText().toUpperCase().equals("TRANDS")) {//Если пользователь вводит "Тренды"
                 try {
-                    ArrayList trands = (ArrayList) new Trends().getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
+                    ArrayList<Channel> trands = (ArrayList) new Trends().getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
                     for (int i = 0; i < 10; i++) {
-                        sendMsg(message, getId(trands, i));//выводим данные ссылки
+                        Channel ch = trands.get(i);
+                        sendMsg(message, /*getId(ch.getAdress())+"\n"+*/"*"+ch.getChannelTitle()+"*\n"+ch.getTitle()+"\n"+ch.getDate());//выводим данные ссылки
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -48,6 +52,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+
     public String getBotUsername() {
         return "YouTubeTrands";
     }
@@ -56,10 +61,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         return "513242666:AAETr653EJNbC82F8uZrrm-uMMhcRkmiigA";
     }
 
-    private String getId(List trands,int i){
+    private String getId(String adress){
         //Если в ссылке встречается "_" то вылетает исключение. Данная функция преобразовывает все "_" в "\\_"
         StringBuffer id = new StringBuffer();
-        id.append(trands.get(i));
+        id.append(adress);
         Pattern pat = Pattern.compile("[\\_]");//вписываем какие символы мы будем искать, в данном случае "_"
         Matcher m = pat.matcher(id);//ищем данный символ в нашей ссылке
         if(m.find()){
