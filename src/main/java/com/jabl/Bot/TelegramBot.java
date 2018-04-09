@@ -23,7 +23,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         Message message = update.getMessage();
         if (message != null && message.hasText()) {//Проверка на пустоту сообщения
             if (message.getText().equals("/info") || message.getText().equals("/start")) {
-                sendMsg(message, "Привет. Напиши 'Тренды' ");
+                sendMsg(message, "Привет. Выбери одну из команд.");
             }
             if (message.getText().toUpperCase().equals("ТРЕНДЫ") || message.getText().toUpperCase().equals("TRANDS")) {//Если пользователь вводит "Тренды"
                 try {
@@ -36,15 +36,53 @@ public class TelegramBot extends TelegramLongPollingBot {
                     e.printStackTrace();
                 }
             }
+            if (message.getText().toUpperCase().equals("ДОБАВИТЬ КАНАЛ В ЧЕРНЫЙ СПИСОК")) {
+                sendMsg(message, "Напиши название каналов которые ты хочешь добавить в черный список.");
+            }
+            if (message.getText().toUpperCase().equals("ДОБАВИТЬ В ЧЕРНЫЙ СПИСОК ТЕГИ")) {
+                sendMsg(message, "Напиши теги которые ты не хочешь, чтобы я присылал.");
+            }
+            if (message.getText().toUpperCase().equals("УКАЗАТЬ РЕГИОН")) {
+                sendMsg(message, "Укажите из какой вы страны");
+            }
         }
     }
 
 
-    private void sendMsg(Message msg,String s) {
+    private void sendMsg (Message message, String text) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
-        sendMessage.setChatId(msg.getChatId().toString());
-        sendMessage.setText(s);
+
+        // Создаем клавиуатуру
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        replyKeyboardMarkup.setOneTimeKeyboard(true);
+
+        // Создаем список строк клавиатуры
+        List<KeyboardRow> keyboard = new ArrayList<>();
+
+        // Первая строчка клавиатуры
+        KeyboardRow keyboardFirstRow = new KeyboardRow();
+        // Добавляем кнопки в первую строчку клавиатуры
+        keyboardFirstRow.add("Тренды");
+        keyboardFirstRow.add("Добавить канал в черный список");
+
+        // Вторая строчка клавиатуры
+        KeyboardRow keyboardSecondRow = new KeyboardRow();
+        // Добавляем кнопки во вторую строчку клавиатуры
+        keyboardSecondRow.add("Добавить в черный список теги");
+        keyboardSecondRow.add("Указать регион");
+
+        // Добавляем все строчки клавиатуры в список
+        keyboard.add(keyboardFirstRow);
+        keyboard.add(keyboardSecondRow);
+        // и устанваливаем этот список нашей клавиатуре
+        replyKeyboardMarkup.setKeyboard(keyboard);
+
+        sendMessage.setChatId(message.getChatId().toString());
+        sendMessage.setText(text);
         try {
             sendMessage(sendMessage);
         } catch (TelegramApiException e) {
