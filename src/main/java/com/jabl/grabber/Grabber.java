@@ -7,16 +7,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 
 public class Grabber {
-    URL url;
-    BufferedReader reader;
-    StringBuffer buffer;
+    private BufferedReader reader;
+    private StringBuffer buffer;
 
+    public ChannelsInfo makeParsing(String region) throws IOException {
+        getConnection(new URL(
+                 "https://www.googleapis.com/youtube/v3/videos?" +
+                       "part=id%2C+snippet&" +
+                       "chart=mostPopular&regionCode="+ region +"&maxResults=10&" +
+                       "key=AIzaSyBfsj9xmTSFy9hIHM9sDqimg0XvHstjpiY"));
+        return getTrends();
+    }
 
-    public Grabber(URL url) throws IOException {
-        this.url = url;
+    private void getConnection(URL url) throws IOException {
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
         urlConnection.setRequestMethod("GET");
         urlConnection.connect();
@@ -40,7 +48,7 @@ public class Grabber {
             e.printStackTrace();
         }
         String resultJson = buffer.toString(); // переводим нашу информацию в Стринг.
-        ChannelsInfo parsing = new Gson().fromJson(resultJson, ChannelsInfo.class);//десериализуем наш JSON файл и закидываем всю информацию в ChannelInfo
-        return parsing;//возвращаем объект обратно в функцию объект класса.
+        ChannelsInfo channelsInfo = new Gson().fromJson(resultJson, ChannelsInfo.class);//десериализуем наш JSON файл и закидываем всю информацию в ChannelInfo
+        return channelsInfo;//возвращаем объект обратно в функцию объект класса.
     }
 }

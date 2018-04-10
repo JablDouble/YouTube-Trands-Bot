@@ -11,20 +11,20 @@ import java.util.regex.Pattern;
 
 public class Trends {
 
+    private String region = "RU";
+
+
     public List<Channel> getTrends() throws IOException {
-        Grabber grabber = new Grabber(new URL(
-                "https://www.googleapis.com/youtube/v3/videos?" +
-                        "part=id%2C+snippet&" +
-                        "chart=mostPopular&regionCode=RU&maxResults=10&" +
-                        "key=AIzaSyBfsj9xmTSFy9hIHM9sDqimg0XvHstjpiY"));//Вкидываем get запрос
-        ChannelsInfo infoTrends = grabber.getTrends(); //получаем данные о трендах
-        List<Channel> output = new ArrayList<>();
+        ChannelsInfo channelsInfo = new Grabber().makeParsing(region);//Вкидываем get запрос и получаем данные
+        List<Channel> trendsChannel = new ArrayList<>(); // будем хранить здесь каналы которые находятся в трендах.
         for (int i = 0; i < 10; i++) {
-            Map<String, String> info = (Map<String, String>) infoTrends.items.get(i);//Получаем всю информацию по отдельности о каждом канале
+            Map<String, String> info = (Map<String, String>) channelsInfo.getItems().get(i);//Получаем всю информацию по отдельности о каждом канале
             Channel channel = addFields(info);
-            output.add(channel);//На выход нам нужна только ссылка на видео, поэтому добавляем только ее в лист.
+            //if(!channel.getChannelTitle().equals(blacklist.get(0))) {
+                trendsChannel.add(channel);
+            //}
         }
-        return output;
+        return trendsChannel;
     }
 
     private Channel addFields(Map map){
@@ -41,8 +41,15 @@ public class Trends {
         Map<String,String> image = thumbnails.get("medium");
         channel.setPictures(image.get("url"));
         channel.setDate(snippet1.get("publishedAt"));
-
-//        channel.setPictures();
         return channel;
     }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
 }

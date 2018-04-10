@@ -19,18 +19,20 @@ import java.util.regex.Pattern;
 
 public class TelegramBot extends TelegramLongPollingBot {
 
+Trends trends;
+
     public void onUpdateReceived(Update update) {
         Message message = update.getMessage();
         if (message != null && message.hasText()) {//Проверка на пустоту сообщения
-            if (message.getText().equals("/info") || message.getText().equals("/start")) {
+            if (message.getText().equals("/start")) {
                 sendMsg(message, "Привет. Выбери одну из команд.");
             }
-            if (message.getText().toUpperCase().equals("ТРЕНДЫ") || message.getText().toUpperCase().equals("TRANDS")) {//Если пользователь вводит "Тренды"
+            if (message.getText().toUpperCase().equals("ТРЕНДЫ")) {//Если пользователь вводит "Тренды"
+                trends = new Trends();
                 try {
-                    ArrayList<Channel> trands = (ArrayList) new Trends().getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
-                    for (int i = 0; i < 10; i++) {
-                        Channel ch = trands.get(i);
-                        sendMsg(message, /*getId(ch.getAdress())+"\n"+*/"*"+ch.getChannelTitle()+"*\n"+ch.getTitle()+"\n"+ch.getDate());//выводим данные ссылки
+                    ArrayList<Channel> channel = (ArrayList<Channel>) trends.getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
+                    for (Channel ch:channel) {
+                        sendMsg(message, "*" + ch.getChannelTitle() + "*\n" + ch.getTitle() + "\n" + ch.getDate());//выводим данные ссылки
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -38,12 +40,13 @@ public class TelegramBot extends TelegramLongPollingBot {
             }
             if (message.getText().toUpperCase().equals("ДОБАВИТЬ КАНАЛ В ЧЕРНЫЙ СПИСОК")) {
                 sendMsg(message, "Напиши название каналов которые ты хочешь добавить в черный список.");
+
             }
             if (message.getText().toUpperCase().equals("ДОБАВИТЬ В ЧЕРНЫЙ СПИСОК ТЕГИ")) {
                 sendMsg(message, "Напиши теги которые ты не хочешь, чтобы я присылал.");
             }
             if (message.getText().toUpperCase().equals("УКАЗАТЬ РЕГИОН")) {
-                sendMsg(message, "Укажите из какой вы страны");
+                sendMsg(message, "Укажите свой регион.");
             }
         }
     }
@@ -99,15 +102,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         return "513242666:AAETr653EJNbC82F8uZrrm-uMMhcRkmiigA";
     }
 
-    private String getId(String adress){
-        //Если в ссылке встречается "_" то вылетает исключение. Данная функция преобразовывает все "_" в "\\_"
-        StringBuffer id = new StringBuffer();
-        id.append(adress);
-        Pattern pat = Pattern.compile("[\\_]");//вписываем какие символы мы будем искать, в данном случае "_"
-        Matcher m = pat.matcher(id);//ищем данный символ в нашей ссылке
-        if(m.find()){
-            id.insert(m.start(), '\\');//если находим, то ставим перед "_" 2 слеша.
-        }
-        return id.toString();
-    }
+//    private String getId(String adress){
+//        //Если в ссылке встречается "_" то вылетает исключение. Данная функция преобразовывает все "_" в "\\_"
+//        StringBuffer id = new StringBuffer();
+//        id.append(adress);
+//        Pattern pat = Pattern.compile("[\\_]");//вписываем какие символы мы будем искать, в данном случае "_"
+//        Matcher m = pat.matcher(id);//ищем данный символ в нашей ссылке
+//        if(m.find()){
+//            id.insert(m.start(), '\\');//если находим, то ставим перед "_" 2 слеша.
+//        }
+//        return id.toString();
+//    }
+
 }
