@@ -8,6 +8,7 @@ import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.api.objects.stickers.Sticker;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
@@ -19,7 +20,17 @@ import java.util.regex.Pattern;
 
 public class TelegramBot extends TelegramLongPollingBot {
 
-Trends trends;
+private BlackList blackList;
+private Trends trends;
+private Boolean addBlackChannel;
+private Boolean addBlackTags;
+
+    public TelegramBot() {
+        blackList = new BlackList();
+        trends = new Trends();
+        addBlackChannel = false;
+        addBlackTags = false;
+    }
 
     public void onUpdateReceived(Update update) {
         Message message = update.getMessage();
@@ -27,26 +38,54 @@ Trends trends;
             if (message.getText().equals("/start")) {
                 sendMsg(message, "Привет. Выбери одну из команд.");
             }
-            if (message.getText().toUpperCase().equals("ТРЕНДЫ")) {//Если пользователь вводит "Тренды"
-                trends = new Trends();
+            else if (message.getText().toUpperCase().equals("ТРЕНДЫ")) {//Если пользователь вводит "Тренды"
                 try {
                     ArrayList<Channel> channel = (ArrayList<Channel>) trends.getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
                     for (Channel ch:channel) {
-                        sendMsg(message, "*" + ch.getChannelTitle() + "*\n" + ch.getTitle() + "\n" + ch.getDate());//выводим данные ссылки
+                        Boolean chInBlacklistChannel = channelInBlacklistChannel(ch);
+                        Boolean chInBlackListTags = channelInBlacklistTags(ch);
+                        if (!chInBlacklistChannel && !chInBlackListTags) {
+                            sendMsg(message, "*" + ch.getChannelTitle() + "*\n" + ch.getTitle() + "\n" + ch.getDate());//выводим данные ссылки
+                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-            if (message.getText().toUpperCase().equals("ДОБАВИТЬ КАНАЛ В ЧЕРНЫЙ СПИСОК")) {
-                sendMsg(message, "Напиши название каналов которые ты хочешь добавить в черный список.");
-
+            else if (message.getText().toUpperCase().equals("ДОБАВИТЬ КАНАЛ В ЧЕРНЫЙ СПИСОК")) {
+                sendMsg(message, "Напиши название канала которй ты хочешь добавить в черный список. Пиши по одному каналу за раз. Если ты передумал добавлять напиши 'Конец'");
+                addBlackChannel = true;
             }
-            if (message.getText().toUpperCase().equals("ДОБАВИТЬ В ЧЕРНЫЙ СПИСОК ТЕГИ")) {
-                sendMsg(message, "Напиши теги которые ты не хочешь, чтобы я присылал.");
+            else if (message.getText().toUpperCase().equals("ДОБАВИТЬ В ЧЕРНЫЙ СПИСОК ТЕГИ")) {
+                sendMsg(message, "Напиши теги которые ты не хочешь, чтобы я присылал. Например *Политика*.  Пиши по одному каналу за раз. Если ты передумал добавлять напиши 'Конец'");
+                addBlackTags = true;
             }
-            if (message.getText().toUpperCase().equals("УКАЗАТЬ РЕГИОН")) {
+            else if (message.getText().toUpperCase().equals("УКАЗАТЬ РЕГИОН")) {
                 sendMsg(message, "Укажите свой регион.");
+            }
+            else {
+                if(addBlackChannel){
+                    if (message.getText().toUpperCase().equals("КОНЕЦ")){
+                        sendMsg(message,"Добавление закончено.");
+                        addBlackChannel = false;
+                    } else {
+                        blackList.addBlackChannel(message.getText());
+                        sendMsg(message, "Канал " + message.getText() + " добавлен в черный список. Если хочешь закончить напиши 'Конец'");
+                    }
+                }
+                else if(addBlackTags){
+                    if (message.getText().toUpperCase().equals("КОНЕЦ")){
+                        sendMsg(message,"Добавление закончено.");
+                        addBlackTags = false;
+                    } else {
+                        blackList.getBlacktags().add(message.getText());
+                        sendMsg(message, "Тег " + message.getText() + " добавлен в черный список. Если хочешь закончить напиши 'Конец'");
+                    }
+                }
+                else {
+                    sendMsg(message, "Прости я не сильно люблю болтать, я всего лишь исскуственный интелект, который выполняет свою задачу. БИП-БУП-БАБ-БАБ");
+                    //sendSticker("CAADAgADFAEAArnzlwuWSQcmEDh9mwI");
+                }
             }
         }
     }
@@ -93,6 +132,31 @@ Trends trends;
         }
     }
 
+    private Boolean channelInBlacklistChannel(Channel ch){
+        Boolean chInBlacklist = false;
+        for (int i = 0; i < blackList.getBlackChannel().size(); i++) {
+            if (ch.getChannelTitle().toUpperCase().equals(blackList.getBlackChannel().get(i).toUpperCase())) {
+                chInBlacklist = true;
+            }
+        }
+        return chInBlacklist;
+    }
+
+    private Boolean channelInBlacklistTags(Channel ch){
+        Boolean tagsInBlacklist = false;
+        if(blackList.getBlacktags() != null && ch.getTags() != null ) {
+            if(blackList.getBlacktags().size() >= 1 && ch.getTags().size() >= 1) {
+                for (int i = 0; i < blackList.getBlacktags().size(); i++) {
+                    for (int j = 0; j < ch.getTags().size(); j++) {
+                        if (ch.getTags().get(j).equals(blackList.getBlacktags().get(i))) {
+                            tagsInBlacklist = true;
+                        }
+                    }
+                }
+            }
+        }
+        return tagsInBlacklist;
+    }
 
     public String getBotUsername() {
         return "YouTubeTrands";

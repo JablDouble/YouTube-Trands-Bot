@@ -20,9 +20,7 @@ public class Trends {
         for (int i = 0; i < 10; i++) {
             Map<String, String> info = (Map<String, String>) channelsInfo.getItems().get(i);//Получаем всю информацию по отдельности о каждом канале
             Channel channel = addFields(info);
-            //if(!channel.getChannelTitle().equals(blacklist.get(0))) {
-                trendsChannel.add(channel);
-            //}
+            trendsChannel.add(channel);
         }
         return trendsChannel;
     }
