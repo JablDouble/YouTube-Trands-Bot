@@ -24,12 +24,16 @@ private BlackList blackList;
 private Trends trends;
 private Boolean addBlackChannel;
 private Boolean addBlackTags;
+private Boolean delBlackTags;
+private Boolean delBlackChannel;
 
     public TelegramBot() {
         blackList = new BlackList();
         trends = new Trends();
         addBlackChannel = false;
         addBlackTags = false;
+        delBlackTags = false;
+        delBlackChannel = false;
     }
 
     public void onUpdateReceived(Update update) {
@@ -63,6 +67,22 @@ private Boolean addBlackTags;
             else if (message.getText().toUpperCase().equals("УКАЗАТЬ РЕГИОН")) {
                 sendMsg(message, "Укажите свой регион.");
             }
+            else if (message.getText().toUpperCase().equals("УДАЛИТЬ КАНАЛ ИЗ ЧС")) {
+                if (blackList.getBlackChannel().size() == 0){
+                    sendMsg(message, "Ваш черный список каналов пуст.");
+                } else {
+                    sendMsg(message, "Укажите название канала, который ты хочешь удалить из черного списка.");
+                    delBlackChannel = true;
+                }
+            }
+            else if (message.getText().toUpperCase().equals("УДАЛИТЬ ТЕГ ИЗ ЧС")) {
+                if (blackList.getBlacktags().size() == 0){
+                    sendMsg(message, "Ваш черный список тегов пуст.");
+                } else {
+                    sendMsg(message, "Укажите тег, который ты хочешь удалить из черного списка.");
+                    delBlackTags = true;
+                }
+            }
             else {
                 if(addBlackChannel){
                     if (message.getText().toUpperCase().equals("КОНЕЦ")){
@@ -81,6 +101,34 @@ private Boolean addBlackTags;
                         blackList.getBlacktags().add(message.getText());
                         sendMsg(message, "Тег " + message.getText() + " добавлен в черный список. Если хочешь закончить напиши 'Конец'");
                     }
+                }
+                else if(delBlackChannel){
+                    Boolean delete = false;
+                    for (int i = 0; i < blackList.getBlackChannel().size(); i++) {
+                        if (message.getText().equals(blackList.getBlackChannel().get(i))) {
+                                blackList.getBlackChannel().remove(i);
+                                sendMsg(message, "Канал " + message.getText() + " удален из черного списка.");
+                                delete = true;
+                        }
+                    }
+                    if(!delete){
+                       sendMsg(message,"Канал " + message.getText() + " не находится в черном списке");
+                    }
+                    delBlackChannel = false;
+                }
+                else if(delBlackTags){
+                    Boolean delete = false;
+                    for (int i = 0; i < blackList.getBlacktags().size(); i++) {
+                        if (message.getText().equals(blackList.getBlacktags().get(i))) {
+                            blackList.getBlacktags().remove(i);
+                            sendMsg(message, "Тег " + message.getText() + " удален из черного списка.");
+                            delete = true;
+                        }
+                    }
+                    if(!delete){
+                        sendMsg(message,"Тег " + message.getText() + " не находится в черном списке");
+                    }
+                    delBlackTags = false;
                 }
                 else {
                     sendMsg(message, "Прости я не сильно люблю болтать, я всего лишь исскуственный интелект, который выполняет свою задачу. БИП-БУП-БАБ-БАБ");
@@ -109,17 +157,23 @@ private Boolean addBlackTags;
         KeyboardRow keyboardFirstRow = new KeyboardRow();
         // Добавляем кнопки в первую строчку клавиатуры
         keyboardFirstRow.add("Тренды");
-        keyboardFirstRow.add("Добавить канал в черный список");
+        keyboardFirstRow.add("Указать регион");
 
         // Вторая строчка клавиатуры
         KeyboardRow keyboardSecondRow = new KeyboardRow();
         // Добавляем кнопки во вторую строчку клавиатуры
+        keyboardSecondRow.add("Добавить канал в черный список");
         keyboardSecondRow.add("Добавить в черный список теги");
-        keyboardSecondRow.add("Указать регион");
+
+        KeyboardRow keyboardThirdRow = new KeyboardRow();
+        // Добавляем кнопки во вторую строчку клавиатуры
+        keyboardThirdRow.add("Удалить канал из ЧС");
+        keyboardThirdRow.add("Удалить тег из ЧС");
 
         // Добавляем все строчки клавиатуры в список
         keyboard.add(keyboardFirstRow);
         keyboard.add(keyboardSecondRow);
+        keyboard.add(keyboardThirdRow);
         // и устанваливаем этот список нашей клавиатуре
         replyKeyboardMarkup.setKeyboard(keyboard);
 
