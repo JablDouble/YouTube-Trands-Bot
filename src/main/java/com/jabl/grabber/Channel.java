@@ -1,5 +1,7 @@
 package com.jabl.grabber;
 
+import org.telegram.telegrambots.api.methods.send.SendPhoto;
+
 import java.util.Date;
 import java.util.List;
 
@@ -8,7 +10,7 @@ public class Channel {
     private String title;
     private String channelTitle;
     private String description;
-    private String pictures;
+    private SendPhoto pictures;
     private String date;
     private List tags;
 
@@ -44,11 +46,11 @@ public class Channel {
         this.description = description;
     }
 
-    public String getPictures() {
+    public SendPhoto getPictures() {
         return pictures;
     }
 
-    public void setPictures(String pictures) {
+    public void setPictures(SendPhoto pictures) {
         this.pictures = pictures;
     }
 
