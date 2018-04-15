@@ -4,9 +4,12 @@ import com.jabl.grabber.Channel;
 import com.jabl.grabber.Trends;
 import org.telegram.telegrambots.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.api.objects.stickers.Sticker;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -51,10 +54,12 @@ private Boolean setRegion;
                         Boolean chInBlacklistChannel = channelInBlacklistChannel(ch);
                         Boolean chInBlackListTags = channelInBlacklistTags(ch);
                         if (!chInBlacklistChannel && !chInBlackListTags) {
-                            sendMsg(message, "*" + ch.getChannelTitle() + "*\n" + ch.getTitle() + "\n" + ch.getDate());//выводим данные ссылки
+                                sendButton(message, ch.getChannelTitle() + "\n" + ch.getTitle() + "\n" + ch.getDate(),ch.getAdress(),ch.getPictures());
                         }
                     }
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
             }
@@ -86,6 +91,10 @@ private Boolean setRegion;
                     delBlackTags = true;
                 }
             }
+            else if (message.getText().toUpperCase().equals("ЧС")) {
+                System.out.println(blackList.getBlacktags());
+                System.out.println(blackList.getBlackChannel());
+            }
             else {
                 if(addBlackChannel){
                     if (message.getText().toUpperCase().equals("ЗАКОНЧИТЬ ДОБАВЛЕНИЕ")){
@@ -108,8 +117,8 @@ private Boolean setRegion;
                 else if(delBlackChannel){
                     Boolean delete = false;
                     for (int i = 0; i < blackList.getBlackChannel().size(); i++) {
-                        if (message.getText().equals(blackList.getBlackChannel().get(i))) {
-                                blackList.getBlackChannel().remove(i);
+                        if (message.getText().equals(blackList.getBlackChannel().toArray()[i])) {
+                                blackList.getBlackChannel().remove(message.getText());
                                 sendMsg(message, "Канал " + message.getText() + " удален из черного списка.");
                                 delete = true;
                         }
@@ -122,8 +131,8 @@ private Boolean setRegion;
                 else if(delBlackTags){
                     Boolean delete = false;
                     for (int i = 0; i < blackList.getBlacktags().size(); i++) {
-                        if (message.getText().equals(blackList.getBlacktags().get(i))) {
-                            blackList.getBlacktags().remove(i);
+                        if (message.getText().equals(blackList.getBlacktags().toArray()[i])) {
+                            blackList.getBlacktags().remove(message.getText());
                             sendMsg(message, "Тег " + message.getText() + " удален из черного списка.");
                             delete = true;
                         }
@@ -192,6 +201,22 @@ private Boolean setRegion;
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    private void sendButton(Message message,String text,String url,SendPhoto sendPhoto) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.enableMarkdown(true);
+        sendMessage.setChatId(message.getChatId().toString());
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<InlineKeyboardButton> rowInline = new ArrayList<>();
+        rowInline.add(new InlineKeyboardButton().setText("Посмотреть на YouTube").setUrl(getId(url)));
+        rowsInline.add(rowInline);
+// Add it to the message
+        markupInline.setKeyboard(rowsInline);
+        sendPhoto.setChatId(message.getChatId().toString()).setCaption(text);
+        sendPhoto.setReplyMarkup(markupInline);
+        sendPhoto(sendPhoto); // Call method to send the photo
     }
 
     private void setRegion(Message message, String text) {
@@ -266,7 +291,7 @@ private Boolean setRegion;
     private Boolean channelInBlacklistChannel(Channel ch){
         Boolean chInBlacklist = false;
         for (int i = 0; i < blackList.getBlackChannel().size(); i++) {
-            if (ch.getChannelTitle().toUpperCase().equals(blackList.getBlackChannel().get(i).toUpperCase())) {
+            if (ch.getChannelTitle().toUpperCase().equals(blackList.getBlackChannel().toArray()[i])) {
                 chInBlacklist = true;
             }
         }
@@ -279,7 +304,7 @@ private Boolean setRegion;
             if(blackList.getBlacktags().size() >= 1 && ch.getTags().size() >= 1) {
                 for (int i = 0; i < blackList.getBlacktags().size(); i++) {
                     for (int j = 0; j < ch.getTags().size(); j++) {
-                        if (ch.getTags().get(j).equals(blackList.getBlacktags().get(i))) {
+                        if (ch.getTags().get(j).equals(blackList.getBlacktags().toArray()[i])) {
                             tagsInBlacklist = true;
                         }
                     }
@@ -289,6 +314,7 @@ private Boolean setRegion;
         return tagsInBlacklist;
     }
 
+
     public String getBotUsername() {
         return "YouTubeTrands";
     }
@@ -297,16 +323,16 @@ private Boolean setRegion;
         return "513242666:AAETr653EJNbC82F8uZrrm-uMMhcRkmiigA";
     }
 
-//    private String getId(String adress){
-//        //Если в ссылке встречается "_" то вылетает исключение. Данная функция преобразовывает все "_" в "\\_"
-//        StringBuffer id = new StringBuffer();
-//        id.append(adress);
-//        Pattern pat = Pattern.compile("[\\_]");//вписываем какие символы мы будем искать, в данном случае "_"
-//        Matcher m = pat.matcher(id);//ищем данный символ в нашей ссылке
-//        if(m.find()){
-//            id.insert(m.start(), '\\');//если находим, то ставим перед "_" 2 слеша.
-//        }
-//        return id.toString();
-//    }
+    private String getId(String adress){
+        //Если в ссылке встречается "_" то вылетает исключение. Данная функция преобразовывает все "_" в "\\_"
+        StringBuffer id = new StringBuffer();
+        id.append(adress);
+        Pattern pat = Pattern.compile("[\\_]");//вписываем какие символы мы будем искать, в данном случае "_"
+        Matcher m = pat.matcher(id);//ищем данный символ в нашей ссылке
+        if(m.find()){
+            id.insert(m.start(), '\\');//если находим, то ставим перед "_" 2 слеша.
+        }
+        return id.toString();
+    }
 
 }

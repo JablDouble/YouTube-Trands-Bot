@@ -1,5 +1,7 @@
 package com.jabl.grabber;
 
+import org.telegram.telegrambots.api.methods.send.SendPhoto;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -36,8 +38,10 @@ public class Trends {
         List tags = snippet2.get("tags");
         channel.setTags(tags);
         Map<String,Map<String,String>> thumbnails = (Map<String, Map<String, String>>) snippet2.get("thumbnails");
-        Map<String,String> image = thumbnails.get("medium");
-        channel.setPictures(image.get("url"));
+        Map<String,String> image = thumbnails.get("high");
+        SendPhoto sendPhoto = new SendPhoto();
+        sendPhoto.setPhoto(image.get("url"));
+        channel.setPictures(sendPhoto);
         channel.setDate(snippet1.get("publishedAt"));
         return channel;
     }
