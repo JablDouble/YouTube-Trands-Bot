@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 
 public class TelegramBot extends TelegramLongPollingBot {
 
-private BlackList blackList;
+private BlackListArray blackListArray;
 private Trends trends;
 private Boolean addBlackChannel;
 private Boolean addBlackTags;
@@ -32,7 +32,7 @@ private Boolean delBlackChannel;
 private Boolean setRegion;
 
     public TelegramBot() {
-        blackList = new BlackList();
+        blackListArray = new BlackListArray();
         trends = new Trends();
         addBlackChannel = false;
         addBlackTags = false;
@@ -43,6 +43,7 @@ private Boolean setRegion;
 
     public void onUpdateReceived(Update update) {
         Message message = update.getMessage();
+        createBlackList(message);
         if (message != null && message.hasText()) {//Проверка на пустоту сообщения
             if (message.getText().equals("/start")) {
                 sendMsg(message, "Привет. Выбери одну из команд.");
@@ -50,11 +51,15 @@ private Boolean setRegion;
             else if (message.getText().toUpperCase().equals("ТРЕНДЫ")) {//Если пользователь вводит "Тренды"
                 try {
                     ArrayList<Channel> channel = (ArrayList<Channel>) trends.getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
-                    for (Channel ch:channel) {
-                        Boolean chInBlacklistChannel = channelInBlacklistChannel(ch);
-                        Boolean chInBlackListTags = channelInBlacklistTags(ch);
+                    int video = 10;
+                    for (int i = 0; i < video; i++) {
+                        Boolean chInBlacklistChannel = channelInBlacklistChannel(channel.get(i),message);
+                        Boolean chInBlackListTags = channelInBlacklistTags(channel.get(i),message);
                         if (!chInBlacklistChannel && !chInBlackListTags) {
-                                sendButton(message, ch,ch.getAdress(),ch.getPictures());
+                            sendButton(message, channel.get(i),channel.get(i).getAdress(),channel.get(i).getPictures());
+                        }
+                        if(chInBlacklistChannel || chInBlackListTags){
+                            video++;
                         }
                     }
                 } catch (IOException e) {
@@ -76,7 +81,7 @@ private Boolean setRegion;
                 offOtherFunction("setRegion");
             }
             else if (message.getText().toUpperCase().equals("УДАЛИТЬ КАНАЛ ИЗ ЧС")) {
-                if (blackList.getBlackChannel().size() == 0){
+                if (blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().size() == 0){
                     sendMsg(message, "Ваш черный список каналов пуст.");
                 } else {
                     sendMsg(message, "Укажите название канала, который ты хочешь удалить из черного списка.");
@@ -84,7 +89,7 @@ private Boolean setRegion;
                 }
             }
             else if (message.getText().toUpperCase().equals("УДАЛИТЬ ТЕГ ИЗ ЧС")) {
-                if (blackList.getBlacktags().size() == 0){
+                if (blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().size() == 0){
                     sendMsg(message, "Ваш черный список тегов пуст.");
                 } else {
                     sendMsg(message, "Укажите тег, который ты хочешь удалить из черного списка.");
@@ -92,8 +97,9 @@ private Boolean setRegion;
                 }
             }
             else if (message.getText().toUpperCase().equals("ЧС")) {
-                System.out.println(blackList.getBlacktags());
-                System.out.println(blackList.getBlackChannel());
+                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags());
+                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel());
+                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().toArray()[0]);
             }
             else {
                 if(addBlackChannel){
@@ -101,7 +107,7 @@ private Boolean setRegion;
                         sendMsg(message,"Добавление закончено.");
                         addBlackChannel = false;
                     } else {
-                        blackList.addBlackChannel(message.getText());
+                        blackListArray.getBlackListCup().get(message.getChatId().toString()).addBlackChannel(message.getText());
                         endBlacklist(message, "Канал " + message.getText() + " добавлен в черный список. Если хотите закончить нажмите кнопку завершения.");
                     }
                 }
@@ -110,15 +116,15 @@ private Boolean setRegion;
                         sendMsg(message,"Добавление закончено.");
                         addBlackTags = false;
                     } else {
-                        blackList.getBlacktags().add(message.getText());
+                        blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().add(message.getText());
                         endBlacklist(message, "Тег " + message.getText() + " добавлен в черный список. Если хотите закончить нажмите кнопку завершения.");
                     }
                 }
                 else if(delBlackChannel){
                     Boolean delete = false;
-                    for (int i = 0; i < blackList.getBlackChannel().size(); i++) {
-                        if (message.getText().equals(blackList.getBlackChannel().toArray()[i])) {
-                                blackList.getBlackChannel().remove(message.getText());
+                    for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().size(); i++) {
+                        if (message.getText().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().toArray()[i])) {
+                            blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().remove(message.getText());
                                 sendMsg(message, "Канал " + message.getText() + " удален из черного списка.");
                                 delete = true;
                         }
@@ -130,9 +136,9 @@ private Boolean setRegion;
                 }
                 else if(delBlackTags){
                     Boolean delete = false;
-                    for (int i = 0; i < blackList.getBlacktags().size(); i++) {
-                        if (message.getText().equals(blackList.getBlacktags().toArray()[i])) {
-                            blackList.getBlacktags().remove(message.getText());
+                    for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().size(); i++) {
+                        if (message.getText().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().toArray()[i])) {
+                            blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().remove(message.getText());
                             sendMsg(message, "Тег " + message.getText() + " удален из черного списка.");
                             delete = true;
                         }
@@ -293,10 +299,10 @@ private Boolean setRegion;
         }
     }
 
-    private Boolean channelInBlacklistChannel(Channel ch){
+    private Boolean channelInBlacklistChannel(Channel ch, Message message){
         Boolean chInBlacklist = false;
-        for (int i = 0; i < blackList.getBlackChannel().size(); i++) {
-            if (ch.getChannelTitle().toUpperCase().equals(blackList.getBlackChannel().toArray()[i])) {
+        for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().size(); i++) {
+            if (ch.getChannelTitle().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().toArray()[i])) {
                 chInBlacklist = true;
             }
         }
@@ -341,13 +347,13 @@ private Boolean setRegion;
         }
     }
 
-    private Boolean channelInBlacklistTags(Channel ch){
+    private Boolean channelInBlacklistTags(Channel ch,Message message){
         Boolean tagsInBlacklist = false;
-        if(blackList.getBlacktags() != null && ch.getTags() != null ) {
-            if(blackList.getBlacktags().size() >= 1 && ch.getTags().size() >= 1) {
-                for (int i = 0; i < blackList.getBlacktags().size(); i++) {
+        if(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags() != null && ch.getTags() != null ) {
+            if(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().size() >= 1 && ch.getTags().size() >= 1) {
+                for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().size(); i++) {
                     for (int j = 0; j < ch.getTags().size(); j++) {
-                        if (ch.getTags().get(j).equals(blackList.getBlacktags().toArray()[i])) {
+                        if (ch.getTags().get(j).equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().toArray()[i])) {
                             tagsInBlacklist = true;
                         }
                     }
@@ -357,6 +363,14 @@ private Boolean setRegion;
         return tagsInBlacklist;
     }
 
+    private void createBlackList(Message message){
+        if(blackListArray.getBlackListCup().size() == 0){
+            blackListArray.addBlackListCup(message.getChatId().toString(),new BlackList());
+        }
+        else if (!blackListArray.getBlackListCup().containsKey(message.getChatId().toString())){
+            blackListArray.addBlackListCup(message.getChatId().toString(),new BlackList());
+        }
+    }
 
     public String getBotUsername() {
         return "YouTubeTrands";

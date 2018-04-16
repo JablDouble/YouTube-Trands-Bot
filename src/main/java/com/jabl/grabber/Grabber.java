@@ -19,7 +19,7 @@ public class Grabber {
         getConnection(new URL(
                  "https://www.googleapis.com/youtube/v3/videos?" +
                        "part=id%2C+snippet&" +
-                       "chart=mostPopular&regionCode="+ region +"&maxResults=10&" +
+                       "chart=mostPopular&regionCode="+ region +"&maxResults=25&" +
                        "key=AIzaSyBfsj9xmTSFy9hIHM9sDqimg0XvHstjpiY"));
         return getTrends();
     }
