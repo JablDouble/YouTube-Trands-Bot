@@ -19,7 +19,7 @@ public class Trends {
     public List<Channel> getTrends() throws IOException {
         ChannelsInfo channelsInfo = new Grabber().makeParsing(region);//Вкидываем get запрос и получаем данные
         List<Channel> trendsChannel = new ArrayList<>(); // будем хранить здесь каналы которые находятся в трендах.
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 25; i++) {
             Map<String, String> info = (Map<String, String>) channelsInfo.getItems().get(i);//Получаем всю информацию по отдельности о каждом канале
             Channel channel = addFields(info);
             trendsChannel.add(channel);
