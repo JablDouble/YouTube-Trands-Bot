@@ -1,8 +1,10 @@
 package com.jabl.Bot;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.jabl.grabber.Channel;
 import com.jabl.grabber.Trends;
-import org.telegram.telegrambots.api.methods.send.SendMediaGroup;
+import org.json.JSONObject;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.api.objects.Message;
@@ -11,10 +13,11 @@ import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
-import org.telegram.telegrambots.api.objects.stickers.Sticker;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,7 @@ private Boolean setRegion;
         delBlackTags = false;
         delBlackChannel = false;
         setRegion = false;
+
     }
 
     public void onUpdateReceived(Update update) {
@@ -50,18 +54,8 @@ private Boolean setRegion;
             }
             else if (message.getText().toUpperCase().equals("ТРЕНДЫ")) {//Если пользователь вводит "Тренды"
                 try {
-                    ArrayList<Channel> channel = (ArrayList<Channel>) trends.getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
-                    int video = 10;
-                    for (int i = 0; i < video; i++) {
-                        Boolean chInBlacklistChannel = channelInBlacklistChannel(channel.get(i),message);
-                        Boolean chInBlackListTags = channelInBlacklistTags(channel.get(i),message);
-                        if (!chInBlacklistChannel && !chInBlackListTags) {
-                            sendButton(message, channel.get(i),channel.get(i).getAdress(),channel.get(i).getPictures());
-                        }
-                        if(chInBlacklistChannel || chInBlackListTags){
-                            video++;
-                        }
-                    }
+                    ArrayList<Channel> channel = trends.getTrends();//Создаем лист, заносим в него все ссылки на трендовые видео
+                    showTrends(message,channel);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (TelegramApiException e) {
@@ -77,8 +71,17 @@ private Boolean setRegion;
                 offOtherFunction("addBlackTags");
             }
             else if (message.getText().toUpperCase().equals("УКАЗАТЬ РЕГИОН")) {
-                setRegion(message, "Укажите свой регион.");
+                setRegionKeyboard(message, "Укажите свой регион.");
                 offOtherFunction("setRegion");
+            }
+            else if (message.getText().toUpperCase().equals("ЧС")) {
+                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel());
+                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags());
+                System.out.println(addBlackChannel);
+                System.out.println(addBlackTags);
+            }
+            else if (message.getText().toUpperCase().equals("ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ")){
+                otherSettingKeyboard(message);
             }
             else if (message.getText().toUpperCase().equals("УДАЛИТЬ КАНАЛ ИЗ ЧС")) {
                 if (blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().size() == 0){
@@ -96,66 +99,34 @@ private Boolean setRegion;
                     offOtherFunction("delBlackTags");
                 }
             }
-            else if (message.getText().toUpperCase().equals("ЧС")) {
-                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags());
-                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel());
-                System.out.println(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().toArray()[0]);
+            else if (message.getText().toUpperCase().equals("НАЗАД")) {
+                sendMsg(message,"Вы вернулись в главное меню");
+            }
+            else if (message.getText().toUpperCase().equals("ПОКАЗАТЬ ЧЕРНЫЙ СПИСОК")) {
+                StringBuilder getBlacklist = new StringBuilder();
+                getBlacklist.append("Каналы в черном списке:\n");
+                getBlacklist.append(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel() + "\n");
+                getBlacklist.append("Теги в черном списке:\n");
+                getBlacklist.append(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags() + "\n");
+                sendMsg(message,getBlacklist.toString());
             }
             else {
                 if(addBlackChannel){
-                    if (message.getText().toUpperCase().equals("ЗАКОНЧИТЬ ДОБАВЛЕНИЕ")){
-                        sendMsg(message,"Добавление закончено.");
-                        addBlackChannel = false;
-                    } else {
-                        blackListArray.getBlackListCup().get(message.getChatId().toString()).addBlackChannel(message.getText());
-                        endBlacklist(message, "Канал " + message.getText() + " добавлен в черный список. Если хотите закончить нажмите кнопку завершения.");
-                    }
+                    addBlackChannel(message);
                 }
                 else if(addBlackTags){
-                    if (message.getText().toUpperCase().equals("ЗАКОНЧИТЬ ДОБАВЛЕНИЕ")){
-                        sendMsg(message,"Добавление закончено.");
-                        addBlackTags = false;
-                    } else {
-                        blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().add(message.getText());
-                        endBlacklist(message, "Тег " + message.getText() + " добавлен в черный список. Если хотите закончить нажмите кнопку завершения.");
-                    }
+                    addBlackTags(message);
                 }
                 else if(delBlackChannel){
-                    Boolean delete = false;
-                    for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().size(); i++) {
-                        if (message.getText().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().toArray()[i])) {
-                            blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().remove(message.getText());
-                                sendMsg(message, "Канал " + message.getText() + " удален из черного списка.");
-                                delete = true;
-                        }
-                    }
-                    if(!delete){
-                       sendMsg(message,"Канал " + message.getText() + " не находится в черном списке");
-                    }
+                    delBlacklistChannel(message);
                     delBlackChannel = false;
                 }
                 else if(delBlackTags){
-                    Boolean delete = false;
-                    for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().size(); i++) {
-                        if (message.getText().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().toArray()[i])) {
-                            blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().remove(message.getText());
-                            sendMsg(message, "Тег " + message.getText() + " удален из черного списка.");
-                            delete = true;
-                        }
-                    }
-                    if(!delete){
-                        sendMsg(message,"Тег " + message.getText() + " не находится в черном списке");
-                    }
+                    delBlacklistTag(message);
                     delBlackTags = false;
                 }
                 else if(setRegion){
-                    if(message.getText().equals("RU") || message.getText().equals("ES") || message.getText().equals("US") || message.getText().equals("KZ")) {
-                        trends.setRegion(message.getText());
-                        setRegion = false;
-                        sendMsg(message, "Регион был успешно изменен.");
-                    } else{
-                        sendMsg(message, "Ошибка, вы ввели регион не находящийся в списке.");
-                    }
+                    setRegion(message);
                 }
                 else {
                     sendMsg(message, "Прости я не сильно люблю болтать, я всего лишь исскуственный интелект, который выполняет свою задачу. БИП-БУП-БАБ-БАБ");
@@ -170,38 +141,11 @@ private Boolean setRegion;
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
 
-        // Создаем клавиуатуру
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        ReplyKeyboardMarkup replyKeyboardMarkup = showKeyboard();// Создаем клавиуатуру
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        replyKeyboardMarkup.setSelective(true);
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        replyKeyboardMarkup.setOneTimeKeyboard(true);
-
         // Создаем список строк клавиатуры
         List<KeyboardRow> keyboard = new ArrayList<>();
-
-        // Первая строчка клавиатуры
-        KeyboardRow keyboardFirstRow = new KeyboardRow();
-        // Добавляем кнопки в первую строчку клавиатуры
-        keyboardFirstRow.add("Тренды");
-        keyboardFirstRow.add("Указать регион");
-
-        // Вторая строчка клавиатуры
-        KeyboardRow keyboardSecondRow = new KeyboardRow();
-        // Добавляем кнопки во вторую строчку клавиатуры
-        keyboardSecondRow.add("Добавить канал в черный список");
-        keyboardSecondRow.add("Добавить в черный список теги");
-
-        KeyboardRow keyboardThirdRow = new KeyboardRow();
-        // Добавляем кнопки во вторую строчку клавиатуры
-        keyboardThirdRow.add("Удалить канал из ЧС");
-        keyboardThirdRow.add("Удалить тег из ЧС");
-
-        // Добавляем все строчки клавиатуры в список
-        keyboard.add(keyboardFirstRow);
-        keyboard.add(keyboardSecondRow);
-        keyboard.add(keyboardThirdRow);
-        // и устанваливаем этот список нашей клавиатуре
+        keyboard = makeMenuKeyboard(keyboard);
         replyKeyboardMarkup.setKeyboard(keyboard);
 
         sendMessage.setChatId(message.getChatId().toString());
@@ -211,6 +155,34 @@ private Boolean setRegion;
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    private void otherSettingKeyboard(Message message) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.enableMarkdown(true);
+        // Создаем клавиуатуру
+        ReplyKeyboardMarkup replyKeyboardMarkup = showKeyboard();
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+
+        List<KeyboardRow> keyboard = new ArrayList<>();
+        keyboard = makeSettingKeyboard(keyboard);
+        replyKeyboardMarkup.setKeyboard(keyboard);// и устанваливаем этот список нашей клавиатуре
+
+        sendMessage.setChatId(message.getChatId().toString());
+        sendMessage.setText("Выберете функцию");
+        try {
+            sendMessage(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ReplyKeyboardMarkup showKeyboard(){
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        replyKeyboardMarkup.setOneTimeKeyboard(true);
+        return replyKeyboardMarkup;
     }
 
     private void sendButton(Message message,Channel channel,String url,SendPhoto sendPhoto) throws TelegramApiException {
@@ -222,7 +194,6 @@ private Boolean setRegion;
         List<InlineKeyboardButton> rowInline = new ArrayList<>();
         rowInline.add(new InlineKeyboardButton().setText("Смотреть на " + channel.getChannelTitle()).setUrl(getId(url)));
         rowsInline.add(rowInline);
-// Add it to the message
         markupInline.setKeyboard(rowsInline);
         String text = channel.getChannelTitle() + "\n" + channel.getTitle();
         sendPhoto.setChatId(message.getChatId().toString()).setCaption(text);
@@ -230,35 +201,17 @@ private Boolean setRegion;
         sendPhoto(sendPhoto); // Call method to send the photo
     }
 
-    private void setRegion(Message message, String text) {
+    private void setRegionKeyboard(Message message, String text) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
         // Создаем клавиуатуру
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        ReplyKeyboardMarkup replyKeyboardMarkup = showKeyboard();
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        replyKeyboardMarkup.setSelective(true);
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        replyKeyboardMarkup.setOneTimeKeyboard(true);
 
-        // Создаем список строк клавиатуры
         List<KeyboardRow> keyboard = new ArrayList<>();
+        keyboard = makeRegionKeyboard(keyboard);
 
-        // Первая строчка клавиатуры
-        KeyboardRow keyboardFirstRow = new KeyboardRow();
-        KeyboardRow keyboardSecondRow = new KeyboardRow();
-        KeyboardRow keyboardThirdRow = new KeyboardRow();
-        KeyboardRow keyboardForthRow = new KeyboardRow();
-        // Добавляем кнопки в первую строчку клавиатуры
-        keyboardFirstRow.add("RU");
-        keyboardSecondRow.add("US");
-        keyboardThirdRow.add("ES");
-        keyboardForthRow.add("KZ");
-        keyboard.add(keyboardFirstRow);
-        keyboard.add(keyboardSecondRow);
-        keyboard.add(keyboardThirdRow);
-        keyboard.add(keyboardForthRow);
-        // и устанваливаем этот список нашей клавиатуре
-        replyKeyboardMarkup.setKeyboard(keyboard);
+        replyKeyboardMarkup.setKeyboard(keyboard);// и устанваливаем этот список нашей клавиатуре
 
         sendMessage.setChatId(message.getChatId().toString());
         sendMessage.setText(text);
@@ -269,27 +222,17 @@ private Boolean setRegion;
         }
     }
 
+
     private void endBlacklist(Message message, String text){
         SendMessage sendMessage = new SendMessage();
         sendMessage.enableMarkdown(true);
-        // Создаем клавиуатуру
-        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        ReplyKeyboardMarkup replyKeyboardMarkup = showKeyboard();// Создаем клавиуатуру
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        replyKeyboardMarkup.setSelective(true);
-        replyKeyboardMarkup.setResizeKeyboard(true);
-        replyKeyboardMarkup.setOneTimeKeyboard(true);
-
-        // Создаем список строк клавиатуры
-        List<KeyboardRow> keyboard = new ArrayList<>();
-
-        // Первая строчка клавиатуры
-        KeyboardRow keyboardFirstRow = new KeyboardRow();
-
+        List<KeyboardRow> keyboard = new ArrayList<>();// Создаем список строк клавиатуры
+        KeyboardRow keyboardFirstRow = new KeyboardRow();// Первая строчка клавиатуры
         keyboardFirstRow.add("Закончить добавление");
         keyboard.add(keyboardFirstRow);
-        // и устанваливаем этот список нашей клавиатуре
         replyKeyboardMarkup.setKeyboard(keyboard);
-
         sendMessage.setChatId(message.getChatId().toString());
         sendMessage.setText(text);
         try {
@@ -370,6 +313,123 @@ private Boolean setRegion;
         else if (!blackListArray.getBlackListCup().containsKey(message.getChatId().toString())){
             blackListArray.addBlackListCup(message.getChatId().toString(),new BlackList());
         }
+    }
+
+    private void showTrends(Message message,List<Channel> channel) throws TelegramApiException {
+        int video = 10;
+        for (int i = 0; i < video; i++) {
+            Boolean chInBlacklistChannel = channelInBlacklistChannel(channel.get(i),message);
+            Boolean chInBlackListTags = channelInBlacklistTags(channel.get(i),message);
+            if (!chInBlacklistChannel && !chInBlackListTags) {
+                sendButton(message, channel.get(i),channel.get(i).getAdress(),channel.get(i).getPictures());
+            }
+            if(chInBlacklistChannel || chInBlackListTags){
+                video++;
+            }
+        }
+    }
+
+    private void delBlacklistChannel(Message message){
+        Boolean delete = false;
+        for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().size(); i++) {
+            if (message.getText().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().toArray()[i])) {
+                blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlackChannel().remove(message.getText());
+                sendMsg(message, "Канал " + message.getText() + " удален из черного списка.");
+                delete = true;
+            }
+        }
+        if(!delete){
+            sendMsg(message,"Канал " + message.getText() + " не находится в черном списке");
+        }
+    }
+
+    private void delBlacklistTag(Message message){
+        Boolean delete = false;
+        for (int i = 0; i < blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().size(); i++) {
+            if (message.getText().equals(blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().toArray()[i])) {
+                blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().remove(message.getText());
+                sendMsg(message, "Тег " + message.getText() + " удален из черного списка.");
+                delete = true;
+            }
+        }
+        if(!delete){
+            sendMsg(message,"Тег " + message.getText() + " не находится в черном списке");
+        }
+    }
+
+    private void addBlackChannel(Message message){
+        if (message.getText().toUpperCase().equals("ЗАКОНЧИТЬ ДОБАВЛЕНИЕ")){
+            sendMsg(message,"Добавление закончено.");
+            addBlackChannel = false;
+        } else {
+            blackListArray.getBlackListCup().get(message.getChatId().toString()).addBlackChannel(message.getText());
+            endBlacklist(message, "Канал " + message.getText() + " добавлен в черный список. Если хотите закончить нажмите кнопку завершения.");
+        }
+    }
+
+    private void addBlackTags(Message message){
+        if (message.getText().toUpperCase().equals("ЗАКОНЧИТЬ ДОБАВЛЕНИЕ")){
+            sendMsg(message,"Добавление закончено.");
+            addBlackTags = false;
+        } else {
+            blackListArray.getBlackListCup().get(message.getChatId().toString()).getBlacktags().add(message.getText());
+            endBlacklist(message, "Тег " + message.getText() + " добавлен в черный список. Если хотите закончить нажмите кнопку завершения.");
+        }
+    }
+
+    private void setRegion(Message message){
+        if(message.getText().equals("RU") || message.getText().equals("ES") || message.getText().equals("US") || message.getText().equals("KZ")) {
+            trends.setRegion(message.getText());
+            setRegion = false;
+            sendMsg(message, "Регион был успешно изменен.");
+        } else{
+            sendMsg(message, "Ошибка, вы ввели регион не находящийся в списке.");
+        }
+    }
+
+    private List<KeyboardRow> makeMenuKeyboard(List<KeyboardRow> keyboard){
+        KeyboardRow keyboardFirstRow = new KeyboardRow();
+        keyboardFirstRow.add("Тренды");
+        keyboardFirstRow.add("Дополнительные настройки");
+        KeyboardRow keyboardSecondRow = new KeyboardRow();// Вторая строчка клавиатуры
+        keyboardSecondRow.add("Добавить канал в черный список");
+        keyboardSecondRow.add("Добавить в черный список теги");
+        KeyboardRow keyboardThirdRow = new KeyboardRow();
+        keyboardThirdRow.add("Удалить канал из ЧС");
+        keyboardThirdRow.add("Удалить тег из ЧС");
+        keyboard.add(keyboardFirstRow);// Добавляем все строчки клавиатуры в список
+        keyboard.add(keyboardSecondRow);
+        keyboard.add(keyboardThirdRow);
+        return keyboard;
+    }
+
+    private List<KeyboardRow> makeRegionKeyboard(List<KeyboardRow> keyboard){
+        KeyboardRow keyboardFirstRow = new KeyboardRow();
+        KeyboardRow keyboardSecondRow = new KeyboardRow();
+        KeyboardRow keyboardThirdRow = new KeyboardRow();
+        KeyboardRow keyboardForthRow = new KeyboardRow();
+        keyboardFirstRow.add("RU");// Добавляем кнопки в первую строчку клавиатуры
+        keyboardSecondRow.add("US");
+        keyboardThirdRow.add("ES");
+        keyboardForthRow.add("KZ");
+        keyboard.add(keyboardFirstRow);
+        keyboard.add(keyboardSecondRow);
+        keyboard.add(keyboardThirdRow);
+        keyboard.add(keyboardForthRow);
+        return keyboard;
+    }
+
+    private List<KeyboardRow> makeSettingKeyboard(List<KeyboardRow> keyboard){
+        KeyboardRow keyboardFirstRow = new KeyboardRow();
+        KeyboardRow keyboardSecondRow = new KeyboardRow();
+        KeyboardRow keyboardThirdRow = new KeyboardRow();
+        keyboardFirstRow.add("Указать регион");// Добавляем кнопки в первую строчку клавиатуры
+        keyboardSecondRow.add("Показать черный список");
+        keyboardThirdRow.add("Назад");
+        keyboard.add(keyboardFirstRow);
+        keyboard.add(keyboardSecondRow);
+        keyboard.add(keyboardThirdRow);
+        return keyboard;
     }
 
     public String getBotUsername() {

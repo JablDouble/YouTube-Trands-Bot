@@ -1,6 +1,7 @@
-package com.jabl.grabber;
+package com.jabl.JSONparser;
 
 import com.google.gson.Gson;
+import com.jabl.grabber.ChannelsInfo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
