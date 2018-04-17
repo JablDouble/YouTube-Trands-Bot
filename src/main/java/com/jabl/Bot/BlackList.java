@@ -1,24 +1,21 @@
 package com.jabl.Bot;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class BlackList {
-    private Set<String> blackChannel;
-    private Set<String> blacktags;
+    private TreeSet<String> blackChannel;
+    private TreeSet<String> blacktags;
 
     public BlackList(){
         blackChannel = new TreeSet<>();
         blacktags = new TreeSet<>();
     }
 
-    public Set<String> getBlackChannel() {
+    public TreeSet<String> getBlackChannel() {
         return blackChannel;
     }
 
-    public void setBlackChannel(Set<String> blackChannel) {
+    public void setBlackChannel(TreeSet<String> blackChannel) {
         this.blackChannel = blackChannel;
     }
 
@@ -26,11 +23,11 @@ public class BlackList {
         blackChannel.add(channel);
     }
 
-    public Set<String> getBlacktags() {
+    public TreeSet<String> getBlacktags() {
         return blacktags;
     }
 
-    public void setBlacktags(Set<String> blacktags) {
+    public void setBlacktags(TreeSet<String> blacktags) {
         this.blacktags = blacktags;
     }
 
