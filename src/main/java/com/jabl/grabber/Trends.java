@@ -1,24 +1,21 @@
 package com.jabl.grabber;
 
+import com.jabl.JSONparser.Grabber;
 import org.telegram.telegrambots.api.methods.send.SendPhoto;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Trends {
 
     private String region = "RU";
 
 
-    public List<Channel> getTrends() throws IOException {
+    public ArrayList<Channel> getTrends() throws IOException {
         ChannelsInfo channelsInfo = new Grabber().makeParsing(region);//Вкидываем get запрос и получаем данные
-        List<Channel> trendsChannel = new ArrayList<>(); // будем хранить здесь каналы которые находятся в трендах.
+        ArrayList<Channel> trendsChannel = new ArrayList<>(); // будем хранить здесь каналы которые находятся в трендах.
         for (int i = 0; i < 25; i++) {
             Map<String, String> info = (Map<String, String>) channelsInfo.getItems().get(i);//Получаем всю информацию по отдельности о каждом канале
             Channel channel = addFields(info);
