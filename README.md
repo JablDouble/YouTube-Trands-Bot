@@ -7,6 +7,7 @@ The bot has the ability to add any channel to the black list or add a tag to the
 Go ahead and [try it](https://telegram.me/YouTrandsBot)!
 
 Trends
+
 ![Screenshot](https://i.imgur.com/Um9l1Q0.png)
 
 
